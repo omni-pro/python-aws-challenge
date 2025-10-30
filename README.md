@@ -49,18 +49,6 @@ Construir un sistema **serverless** en AWS que permita:
 
 ---
 
-### DynamoDB
-
-- **Tabla:** `EmailStatus`
-- **PK:** `id` (`UUID` o hash de `email+subject+content`)
-- **Atributos:**  
-  `email`, `subject`, `contentHash`, `status`, `createdAt`, `lastUpdatedAt`, `errorMessage`
-- **GSI1:**  
-  - **PK:** `status`  
-  - **SK:** `createdAt` (para filtrar por fecha y estado)
-
----
-
 ## 🚀 Endpoints mínimos
 
 ### `POST /upload`
