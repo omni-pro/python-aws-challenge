@@ -61,13 +61,11 @@ Devuelve un `batchId` y resumen del proceso.
 Query (ejemplo):
 
 ```graphql
-type Query {
   listEmailStatus(
-    status: [String!]
-    from: String
-    to: String
-  ): EmailStatusConnection!
-}
+    //...filtros
+  ){
+    //...atributos
+  }
 ```
 
 ---
