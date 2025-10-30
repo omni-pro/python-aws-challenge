@@ -57,6 +57,7 @@ Recibe un archivo CSV (`multipart/form-data`) o pre-signed URL.
 Devuelve un `batchId` y resumen del proceso.
 
 ### `/graphql`
+Expón un endpoint /graphql con una query para listar envíos filtrando por status (uno o varios) y rango de fechas (from/to). Define y documenta el contrato y la paginación.
 
 Query (ejemplo):
 
