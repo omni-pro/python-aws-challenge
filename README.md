@@ -23,10 +23,9 @@ Construir un sistema **serverless** en AWS que permita:
   - Debe devolver un resumen: `batchId`, `total`, `enqueued`, `skipped`.
 
 - **Procesamiento**
-  - Parsear el CSV y publicar una tarea por email en una cola (**SQS**).
-  - Un **worker Lambda** consumirá los mensajes y enviará los emails vía **Amazon SES**.
-  - Persistir los estados en **DynamoDB** con campos:
-    - `id`, `email`, `subject`, `createdAt`, `status`, `errorMessage?`, `lastUpdatedAt`.
+  - Parsear el CSV y publicar una tarea por email en una cola.
+  - Un worker consumirá los mensajes y enviará los emails.
+  - Persistir los estados de cada envío.
 
 - **Consulta (GraphQL)**
   - Endpoint `/graphql` con una query para listar por:
