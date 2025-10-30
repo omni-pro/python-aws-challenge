@@ -1,0 +1,197 @@
+# 🧪 Desafío Técnico – Desarrollador Python + AWS (Serverless Email Marketing)
+
+## 🎯 Objetivo
+
+Construir un sistema **serverless** en AWS que permita:
+
+1. **Recibir** un archivo CSV con las columnas `email, subject, content`.
+2. **Procesar y encolar** cada envío de email.
+3. **Enviar los emails** (simulado o real vía SES) y **guardar el estado**:  
+   `PENDING | SENT | ERROR`.
+4. Exponer una **query GraphQL** para **listar estados de envío** filtrando por:
+   - Estado
+   - Rango de fechas (desde / hasta)
+
+---
+
+## 🧩 Requerimientos funcionales
+
+- **Ingreso de datos**
+  - Endpoint que reciba un **CSV** (`multipart/form-data`)  
+    o bien un **pre-signed URL** (upload a S3 + trigger de procesamiento).
+  - Tamaño máximo: ~5 MB (~50k registros).
+  - Debe devolver un resumen: `batchId`, `total`, `enqueued`, `skipped`.
+
+- **Procesamiento**
+  - Parsear el CSV y publicar una tarea por email en una cola (**SQS**).
+  - Un **worker Lambda** consumirá los mensajes y enviará los emails vía **Amazon SES**.
+  - Persistir los estados en **DynamoDB** con campos:
+    - `id`, `email`, `subject`, `createdAt`, `status`, `errorMessage?`, `lastUpdatedAt`.
+
+- **Consulta (GraphQL)**
+  - Endpoint `/graphql` con una query para listar por:
+    - `status` (uno o varios)
+    - `from` / `to` (rango de fechas)
+    - `limit`, `nextToken` (paginación)
+
+- **Librerías obligatorias**
+  - [FastAPI](https://fastapi.tiangolo.com/)
+  - [GraphQL](https://strawberry.rocks/) (Strawberry o Graphene)
+
+---
+
+## 🧱 Requerimientos no funcionales
+
+- **Infraestructura Serverless en AWS**, con **diagrama** del diseño.
+- **Idempotencia**: evitar duplicados si el mismo CSV se procesa dos veces.
+- **Logs y métricas**: CloudWatch.
+- **Errores y reintentos**: uso de DLQ y control de fallas.
+- **Seguridad**: IAM roles mínimos, Secrets Manager, sin claves embebidas.
+- **Costo optimizado**: servicios serverless y bajo consumo en idle.
+
+---
+
+### DynamoDB
+
+- **Tabla:** `EmailStatus`
+- **PK:** `id` (`UUID` o hash de `email+subject+content`)
+- **Atributos:**  
+  `email`, `subject`, `contentHash`, `status`, `createdAt`, `lastUpdatedAt`, `errorMessage`
+- **GSI1:**  
+  - **PK:** `status`  
+  - **SK:** `createdAt` (para filtrar por fecha y estado)
+
+---
+
+## 🚀 Endpoints mínimos
+
+### `POST /upload`
+
+Recibe un archivo CSV (`multipart/form-data`) o pre-signed URL.  
+Devuelve un `batchId` y resumen del proceso.
+
+### `/graphql`
+
+Query (ejemplo):
+
+```graphql
+type EmailStatus {
+  id: ID!
+  email: String!
+  subject: String!
+  status: String!
+  createdAt: String!
+  lastUpdatedAt: String
+  errorMessage: String
+}
+
+type EmailStatusConnection {
+  items: [EmailStatus!]!
+  nextToken: String
+}
+
+type Query {
+  listEmailStatus(
+    status: [String!]
+    from: String
+    to: String
+    limit: Int
+    nextToken: String
+  ): EmailStatusConnection!
+}
+```
+
+---
+
+## 📄 Ejemplo de CSV
+
+```csv
+email,subject,content
+alice@example.com,Welcome,Alice welcome to our platform!
+bob@example.com,Promo,Get 20% off this week.
+```
+
+---
+
+## 📦 Entregables
+
+1. **Infraestructura como código (IaC):** Terraform, AWS SAM o CDK.
+2. **Código en Python (FastAPI + GraphQL)** en un repositorio Git con:
+   ```
+   /infra (sam/terraform/cdk)
+   /app
+     main.py
+     schemas.py
+     services/
+       csv_parser.py
+       queue.py
+       email_sender.py
+       repo.py
+       idempotency.py
+     graphql/
+       schema.py
+     utils/
+       logging.py
+   tests/
+     unit/
+     integration/
+   ```
+3. **Diagrama de arquitectura** (Mermaid o imagen).
+4. **README.md** con instrucciones de despliegue y prueba.
+5. **Evidencias de ejecución:** logs o capturas del sistema funcionando.
+
+---
+
+## 🧮 Criterios de evaluación
+
+| Criterio | Peso | Descripción |
+|----------|------|-------------|
+| **Diseño y Arquitectura** | 30% | Uso adecuado de AWS serverless, escalabilidad, costo, buenas prácticas. |
+| **Calidad de Código** | 30% | Claridad, modularidad, validaciones, manejo de errores, tests. |
+| **Infraestructura y Automatización** | 20% | IaC funcional, scripts de despliegue, CI/CD. |
+| **API & DX** | 10% | FastAPI docs, GraphQL usable, documentación. |
+| **Observabilidad & Operación** | 10% | Logs, métricas, alarmas básicas, DLQ. |
+
+---
+
+## ⚙️ Recomendaciones técnicas
+
+- **Validar CSV:** cabeceras, emails válidos, filas vacías.
+- **Idempotencia:** hash SHA256 (`email|subject|content`).
+- **Reintentos:** política de SQS/Lambda con DLQ.
+- **Testing:** mocks con `moto` o `botocore stub`.
+- **Seguridad:** sin hardcodear secretos, IAM least privilege.
+
+---
+
+## 💡 Puntos adicionales valorados
+
+- CI/CD con GitHub Actions o similar.  
+- “Dry-run mode” (simular envío sin usar SES real).  
+- Métricas personalizadas (envíos/min, error rate).  
+- `campaignId` o `batchId` para agrupar envíos.  
+- Estimación de costos mensuales en README.  
+- Tracing con AWS X-Ray.  
+- Formateo automático (`black`, `isort`, `ruff`, `mypy`).  
+- Multi-stage: `dev` / `prod`.
+
+---
+
+## ⚠️ Aclaraciones
+
+- Si SES está en sandbox, se puede usar un **servicio mock** o emails verificados.
+- Se aceptan variantes del diseño (una o dos Lambdas) si se justifica.
+
+---
+
+## 📨 Entrega final
+
+Enviar:
+- Link al **repositorio Git** con código e instrucciones.  
+- Export de **Postman / Insomnia o similar** o scripts `curl` de prueba.  
+- (Opcional) **URL pública** de la API desplegada en AWS.
+
+---
+
+💬 *Tip:* Documentar claramente **las decisiones técnicas y los trade-offs**.  
+No se evalúa solo que funcione, sino **cómo se piensa y diseña**.
