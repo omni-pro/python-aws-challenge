@@ -19,7 +19,7 @@ Construir un sistema **serverless** en AWS que permita:
 - **Ingreso de datos**
   - Endpoint que reciba un **CSV** (`multipart/form-data`)  
     o bien un **pre-signed URL** (upload a S3 + trigger de procesamiento).
-  - Tamaño máximo: ~5 MB (~50k registros).
+  - Tamaño máximo: difinir y documentar límites.
   - Debe devolver un resumen: `batchId`, `total`, `enqueued`, `skipped`.
 
 - **Procesamiento**
@@ -32,7 +32,6 @@ Construir un sistema **serverless** en AWS que permita:
   - Endpoint `/graphql` con una query para listar por:
     - `status` (uno o varios)
     - `from` / `to` (rango de fechas)
-    - `limit`, `nextToken` (paginación)
 
 - **Librerías obligatorias**
   - [FastAPI](https://fastapi.tiangolo.com/)
@@ -44,7 +43,7 @@ Construir un sistema **serverless** en AWS que permita:
 
 - **Infraestructura Serverless en AWS**, con **diagrama** del diseño.
 - **Idempotencia**: evitar duplicados si el mismo CSV se procesa dos veces.
-- **Logs y métricas**: CloudWatch.
+- **Logs y métricas**: logs/métricas básicos, indicar herramienta y mecanismos.
 - **Errores y reintentos**: uso de DLQ y control de fallas.
 - **Seguridad**: IAM roles mínimos, Secrets Manager, sin claves embebidas.
 - **Costo optimizado**: servicios serverless y bajo consumo en idle.
@@ -75,28 +74,11 @@ Devuelve un `batchId` y resumen del proceso.
 Query (ejemplo):
 
 ```graphql
-type EmailStatus {
-  id: ID!
-  email: String!
-  subject: String!
-  status: String!
-  createdAt: String!
-  lastUpdatedAt: String
-  errorMessage: String
-}
-
-type EmailStatusConnection {
-  items: [EmailStatus!]!
-  nextToken: String
-}
-
 type Query {
   listEmailStatus(
     status: [String!]
     from: String
     to: String
-    limit: Int
-    nextToken: String
   ): EmailStatusConnection!
 }
 ```
@@ -116,26 +98,7 @@ bob@example.com,Promo,Get 20% off this week.
 ## 📦 Entregables
 
 1. **Infraestructura como código (IaC):** Terraform, AWS SAM o CDK.
-2. **Código en Python (FastAPI + GraphQL)** en un repositorio Git con:
-   ```
-   /infra (sam/terraform/cdk)
-   /app
-     main.py
-     schemas.py
-     services/
-       csv_parser.py
-       queue.py
-       email_sender.py
-       repo.py
-       idempotency.py
-     graphql/
-       schema.py
-     utils/
-       logging.py
-   tests/
-     unit/
-     integration/
-   ```
+2. **Código en Python (FastAPI + GraphQL)** en un repositorio Git.
 3. **Diagrama de arquitectura** (Mermaid o imagen).
 4. **README.md** con instrucciones de despliegue y prueba.
 5. **Evidencias de ejecución:** logs o capturas del sistema funcionando.
@@ -151,16 +114,6 @@ bob@example.com,Promo,Get 20% off this week.
 | **Infraestructura y Automatización** | 20% | IaC funcional, scripts de despliegue, CI/CD. |
 | **API & DX** | 10% | FastAPI docs, GraphQL usable, documentación. |
 | **Observabilidad & Operación** | 10% | Logs, métricas, alarmas básicas, DLQ. |
-
----
-
-## ⚙️ Recomendaciones técnicas
-
-- **Validar CSV:** cabeceras, emails válidos, filas vacías.
-- **Idempotencia:** hash SHA256 (`email|subject|content`).
-- **Reintentos:** política de SQS/Lambda con DLQ.
-- **Testing:** mocks con `moto` o `botocore stub`.
-- **Seguridad:** sin hardcodear secretos, IAM least privilege.
 
 ---
 
