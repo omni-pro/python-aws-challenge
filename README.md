@@ -44,7 +44,7 @@ Construir un sistema **serverless** en AWS que permita:
 - **Idempotencia**: evitar duplicados si el mismo CSV se procesa dos veces.
 - **Logs y métricas**: logs/métricas básicos, indicar herramienta y mecanismos.
 - **Errores y reintentos**: uso de DLQ y control de fallas.
-- **Seguridad**: IAM roles mínimos, Secrets Manager, sin claves embebidas.
+- **Seguridad**: IAM roles mínimos, Secrets Manager.
 - **Costo optimizado**: servicios serverless y bajo consumo en idle.
 
 ---
